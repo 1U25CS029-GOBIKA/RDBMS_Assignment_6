@@ -9,6 +9,7 @@ on:
 
 jobs:
   autograding:
+
     runs-on: ubuntu-latest
 
     services:
@@ -25,21 +26,196 @@ jobs:
           --health-retries=10
 
     steps:
+
+      # --------------------------------------------------
+      # STEP 1: Download repository
+      # --------------------------------------------------
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Create Database
-        run: |
-          mysql -h 127.0.0.1 -u root -proot < Assignment_6/starter.sql
 
+      # --------------------------------------------------
+      # STEP 2: Check repository files
+      # This helps identify file-path errors
+      # --------------------------------------------------
+      - name: Check Repository Files
+        run: |
+          echo "Current directory:"
+          pwd
+
+          echo ""
+          echo "Repository contents:"
+          ls -la
+
+          echo ""
+          echo "All files:"
+          find . -type f | sort
+
+
+      # --------------------------------------------------
+      # STEP 3: Check Assignment_6 folder
+      # --------------------------------------------------
+      - name: Check Assignment 6 Files
+        run: |
+          echo "Checking Assignment_6 folder..."
+
+          if [ ! -d "Assignment_6" ]; then
+            echo "ERROR: Assignment_6 folder does not exist!"
+            exit 1
+          fi
+
+          if [ ! -f "Assignment_6/starter.sql" ]; then
+            echo "ERROR: Assignment_6/starter.sql does not exist!"
+            echo ""
+            echo "Available SQL files are:"
+            find . -type f -name "*.sql" | sort
+            exit 1
+          fi
+
+          if [ ! -f "Assignment_6/answer.sql" ]; then
+            echo "ERROR: Assignment_6/answer.sql does not exist!"
+            exit 1
+          fi
+
+          if [ ! -f "Assignment_6/test.sql" ]; then
+            echo "ERROR: Assignment_6/test.sql does not exist!"
+            exit 1
+          fi
+
+          echo "All Assignment 6 files found."
+
+
+      # --------------------------------------------------
+      # STEP 4: Check MySQL
+      # --------------------------------------------------
+      - name: Check MySQL Connection
+        run: |
+          mysql -h 127.0.0.1 -u root -proot -e "SELECT VERSION();"
+
+
+      # --------------------------------------------------
+      # STEP 5: Run starter.sql
+      # --------------------------------------------------
+      - name: Create Database and Initial Data
+        run: |
+          echo "Running starter.sql..."
+
+          mysql -h 127.0.0.1 -u root -proot \
+          < Assignment_6/starter.sql
+
+          echo "starter.sql executed successfully."
+
+
+      # --------------------------------------------------
+      # STEP 6: Run student's answer
+      # --------------------------------------------------
       - name: Run Student Answer
         run: |
-          mysql -h 127.0.0.1 -u root -proot CollegeDB < Assignment_6/answer.sql
+          echo "Running answer.sql..."
 
+          mysql -h 127.0.0.1 -u root -proot CollegeDB \
+          < Assignment_6/answer.sql
+
+          echo "answer.sql executed successfully."
+
+
+      # --------------------------------------------------
+      # STEP 7: Run test cases
+      # --------------------------------------------------
       - name: Run Test Cases
         run: |
-          mysql -h 127.0.0.1 -u root -proot CollegeDB < Assignment_6/test.sql
+          echo "Running test cases..."
 
-      - name: Display Final Result
+          mysql -h 127.0.0.1 -u root -proot CollegeDB \
+          < Assignment_6/test.sql
+
+
+      # --------------------------------------------------
+      # STEP 8: Display final Student table
+      # --------------------------------------------------
+      - name: Display Final Student Records
         run: |
-          mysql -h 127.0.0.1 -u root -proot CollegeDB -e "SELECT * FROM Student;"
+          echo "Final Student Table:"
+          
+          mysql -h 127.0.0.1 -u root -proot CollegeDB \
+          -e "SELECT * FROM Student;"
+
+
+      # --------------------------------------------------
+      # STEP 9: Validate answer
+      # --------------------------------------------------
+      - name: Validate Assignment
+        run: |
+
+          echo "Checking Arun..."
+
+          ARUN=$(mysql -h 127.0.0.1 -u root -proot CollegeDB -N -e "
+          SELECT COUNT(*)
+          FROM Student
+          WHERE StudentID = 1001
+          AND StudentName = 'Arun'
+          AND Gender = 'Male'
+          AND DepartmentID = 101;
+          ")
+
+          echo "Arun result: $ARUN"
+
+
+          echo "Checking Karthik..."
+
+          KARTHIK=$(mysql -h 127.0.0.1 -u root -proot CollegeDB -N -e "
+          SELECT COUNT(*)
+          FROM Student
+          WHERE StudentID = 1003
+          AND StudentName = 'Karthik'
+          AND Gender = 'Male'
+          AND DepartmentID = 103;
+          ")
+
+          echo "Karthik result: $KARTHIK"
+
+
+          echo "Checking Divya deletion..."
+
+          DIVYA=$(mysql -h 127.0.0.1 -u root -proot CollegeDB -N -e "
+          SELECT COUNT(*)
+          FROM Student
+          WHERE StudentID = 1002;
+          ")
+
+          echo "Divya result: $DIVYA"
+
+
+          echo "Checking total number of students..."
+
+          TOTAL=$(mysql -h 127.0.0.1 -u root -proot CollegeDB -N -e "
+          SELECT COUNT(*)
+          FROM Student;
+          ")
+
+          echo "Total students: $TOTAL"
+
+
+          echo ""
+          echo "========================================"
+          echo "           TEST RESULT"
+          echo "========================================"
+
+
+          if [ "$ARUN" -eq 1 ] && \
+             [ "$KARTHIK" -eq 1 ] && \
+             [ "$DIVYA" -eq 0 ] && \
+             [ "$TOTAL" -eq 2 ]; then
+
+              echo "ALL TEST CASES PASSED"
+              echo "Assignment 6 PASSED"
+              echo "========================================"
+
+          else
+
+              echo "TEST CASES FAILED"
+              echo "Assignment 6 FAILED"
+              echo "========================================"
+              exit 1
+
+          fi
