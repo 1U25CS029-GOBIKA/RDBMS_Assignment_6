@@ -1,26 +1,47 @@
 USE CollegeDB;
 
--- Test 1: Arun should exist with DepartmentID 101
-SELECT COUNT(*) AS Arun_Check
-FROM Student
-WHERE StudentID = 1001
-  AND StudentName = 'Arun'
-  AND Gender = 'Male'
-  AND DepartmentID = 101;
+SELECT
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM Student
+            WHERE StudentID = 1001
+              AND StudentName = 'Arun'
+              AND Gender = 'Male'
+              AND DepartmentID = 101
+        )
+        THEN 'PASS'
+        ELSE 'FAIL'
+    END AS Arun_Test;
 
--- Test 2: Karthik should exist with DepartmentID 103
-SELECT COUNT(*) AS Karthik_Check
-FROM Student
-WHERE StudentID = 1003
-  AND StudentName = 'Karthik'
-  AND Gender = 'Male'
-  AND DepartmentID = 103;
+SELECT
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM Student
+            WHERE StudentID = 1003
+              AND StudentName = 'Karthik'
+              AND Gender = 'Male'
+              AND DepartmentID = 103
+        )
+        THEN 'PASS'
+        ELSE 'FAIL'
+    END AS Karthik_Test;
 
--- Test 3: Divya should be deleted
-SELECT COUNT(*) AS Divya_Check
-FROM Student
-WHERE StudentID = 1002;
+SELECT
+    CASE
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM Student
+            WHERE StudentID = 1002
+        )
+        THEN 'PASS'
+        ELSE 'FAIL'
+    END AS Divya_Delete_Test;
 
--- Test 4: Exactly 2 students should remain
-SELECT COUNT(*) AS Total_Students
-FROM Student;
+SELECT
+    CASE
+        WHEN (SELECT COUNT(*) FROM Student) = 2
+        THEN 'PASS'
+        ELSE 'FAIL'
+    END AS Total_Student_Test;
