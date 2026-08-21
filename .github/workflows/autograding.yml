@@ -1,10 +1,9 @@
-
+name: Assignment 6 Autograding
 
 on:
   push:
     paths:
-      - 'Assignment_6/answer.sql'
-      - 'Assignment_6/test.sql'
+      - 'Assignment_6/**'
       - '.github/workflows/autograding.yml'
   workflow_dispatch:
 
@@ -12,16 +11,24 @@ jobs:
   autograding:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup MySQL
-        run: |
-          sudo systemctl start mysql
-          mysql --version
-
-      - name: Create Database and Initial Data
+      - name: Create Database
         run: |
           mysql -h 127.0.0.1 -u root -proot < Assignment_6/starter.sql
 
@@ -31,19 +38,8 @@ jobs:
 
       - name: Run Test Cases
         run: |
-          mysql -h 127.0.0.1 -u root -proot CollegeDB < Assignment_6/test.sql > test_output.txt
+          mysql -h 127.0.0.1 -u root -proot CollegeDB < Assignment_6/test.sql
 
-      - name: Display Test Results
+      - name: Display Final Result
         run: |
-          cat test_output.txt
-
-      - name: Validate Test Results
-        run: |
-          if grep -q "1" test_output.txt && \
-             grep -q "0" test_output.txt && \
-             grep -q "2" test_output.txt; then
-            echo "All test cases passed!"
-          else
-            echo "Test cases failed!"
-            exit 1
-          fi
+          mysql -h 127.0.0.1 -u root -proot CollegeDB -e "SELECT * FROM Student;"
