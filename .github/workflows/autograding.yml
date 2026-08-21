@@ -1,3 +1,6 @@
+- name: Create Database and Initial Data
+  run: |
+    mysql -h 127.0.0.1 -u root -proot < Assignment_6/starter.sql
 name: Assignment 6 Autograding
 
 on:
